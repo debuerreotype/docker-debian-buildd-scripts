@@ -8,34 +8,18 @@ arch='amd64'
 suites="$(wget -qO- "https://github.com/debuerreotype/docker-debian-artifacts/raw/dist-$arch/suites")"
 suites=( $suites )
 
-jankyBuilds="https://doi-janky.infosiftr.net/job/tianon/job/debuerreotype/job/$arch"
-jankyBuildNumber="$(wget -qO- "$jankyBuilds/lastSuccessfulBuild/buildNumber")"
-jankyBase="$jankyBuilds/$jankyBuildNumber/artifact"
-
-echo
-echo "Downloading from '$jankyBase' ..."
-echo
-
 rm -rf suites
 mkdir suites
 
-wget -O suites/serial "$jankyBase/serial"
-
 for suite in "${suites[@]}"; do
-	echo
-	echo "Trying '$suite' ..."
+	echo "Generating '$suite' ..."
 
 	target="suites/$suite"
 	mkdir -p "$target"
 
-	if ! wget -O "$target/rootfs.tar.xz" "$jankyBase/$suite/sbuild/rootfs.tar.xz"; then
-		rm -rf "$target"
-		continue
-	fi
-
 	cat > "$target/Dockerfile" <<-EODF
-		FROM scratch
-		ADD rootfs.tar.xz /
-		CMD ["bash"]
+		FROM debian:$suite
+		RUN sed -i -e 'p; s/^deb /deb-src /' /etc/apt/sources.list
+		RUN set -eux; apt-get update; apt-get install -y --no-install-recommends build-essential fakeroot; rm -rf /var/lib/apt/lists/*
 	EODF
 done
