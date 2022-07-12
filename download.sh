@@ -19,7 +19,7 @@ for suite in "${suites[@]}"; do
 
 	cat > "$target/Dockerfile" <<-EODF
 		FROM debian:$suite
-		RUN sed -i -e 'p; s/^deb /deb-src /' /etc/apt/sources.list
+		RUN set -eux; if [ -s /etc/apt/sources.list ]; then sed -i -e 'p; s/^deb /deb-src /' /etc/apt/sources.list; fi; if [ -s /etc/apt/sources.list.d/debian.sources ]; then sed -i -e '/^Types:/s/$/ deb-src/' /etc/apt/sources.list.d/debian.sources; fi
 		RUN set -eux; apt-get update; apt-get install -y --no-install-recommends build-essential fakeroot; rm -rf /var/lib/apt/lists/*
 	EODF
 done
